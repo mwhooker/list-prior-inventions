@@ -1,0 +1,6 @@
+Usage:
+   ./find_prior_inventions.py <github username>
+   
+   
+TODO:
+    wire up bitbucket, launchpad, etc. 
