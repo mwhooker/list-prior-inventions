@@ -6,23 +6,61 @@ import urllib.request
 from datetime import datetime
 
 def fmt_dt(ds):
-    """Accepts wc3 time and prints utc date."""
+    """Accepts ISO 8601 time and prints UTC date."""
     dt = datetime.strptime(ds, "%Y-%m-%dT%H:%M:%SZ")
     return dt.strftime('%Y-%m-%d')
 
-if len(sys.argv) < 2:
-    print("Usage: script.py <github_username>")
-    sys.exit(1)
+def get_repos(username):
+    """Fetches the list of repositories for a given GitHub username, handling pagination."""
+    repos = []
+    page = 1
+    while True:
+        url = f"https://api.github.com/users/{username}/repos?type=owner&sort=created&per_page=100&page={page}"
+        with urllib.request.urlopen(url) as response:
+            data = json.loads(response.read().decode())
+            if not data:
+                break
+            repos.extend(data)
+            page += 1
+    return repos
 
-url = "https://api.github.com/users/%s/repos?type=owner&sort=created" % sys.argv[1]
-with urllib.request.urlopen(url) as response:
-    repos = json.loads(response.read().decode())
+def filter_owned_repos(repos, username):
+    """Filters repositories to include only those owned by the given username and excludes forks."""
+    owned_repos = [repo for repo in repos if repo['owner']['login'] == username and not repo['fork']]
+    return owned_repos
 
-output = [(repo['name'], fmt_dt(repo['created_at']), repo['html_url']) for repo in repos]
+def create_exhibit_c(repos):
+    """Constructs an Exhibit C with repository details."""
+    exhibit_c = []
+    for repo in repos:
+        title = repo['name']
+        description = repo['description'] if repo['description'] else "No description provided"
+        date = fmt_dt(repo['created_at'])
+        url = repo['html_url']
+        exhibit_c.append({
+            "title": title,
+            "description": description,
+            "date": date,
+            "url": url
+        })
+    return exhibit_c
 
-biggest_title = max(map(lambda x: len(x[0]), output))
+def print_exhibit_c(exhibit_c):
+    """Prints the Exhibit C details."""
+    for item in exhibit_c:
+        print(f"Title: {item['title']}")
+        print(f"Description: {item['description']}")
+        print(f"Date: {item['date']}")
+        print(f"URL: {item['url']}")
+        print()
 
-format_str = "%%-%ds\t%%s\t%%s" % (biggest_title)
-print(format_str % ("Repository", "Created Date", "URL"))
-for attributes in output:
-    print(format_str % attributes)
+if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        print("Usage: script.py <github_username>")
+        sys.exit(1)
+
+    username = sys.argv[1]
+    repos = get_repos(username)
+    owned_repos = filter_owned_repos(repos, username)
+    exhibit_c = create_exhibit_c(owned_repos)
+    print_exhibit_c(exhibit_c)
