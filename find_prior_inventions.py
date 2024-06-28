@@ -34,25 +34,29 @@ def create_exhibit_c(repos):
     exhibit_c = []
     for repo in repos:
         title = repo['name']
-        description = repo['description'] if repo['description'] else "No description provided"
         date = fmt_dt(repo['created_at'])
         url = repo['html_url']
-        exhibit_c.append({
-            "title": title,
-            "description": description,
-            "date": date,
-            "url": url
-        })
+        exhibit_c.append((title, date, url))
     return exhibit_c
 
 def print_exhibit_c(exhibit_c):
     """Prints the Exhibit C details."""
-    for item in exhibit_c:
-        print(f"Title: {item['title']}")
-        print(f"Description: {item['description']}")
-        print(f"Date: {item['date']}")
-        print(f"URL: {item['url']}")
-        print()
+    if not exhibit_c:
+        print("No repositories found.")
+        return
+
+    # Determine the column widths
+    col_widths = [max(len(str(item[i])) for item in exhibit_c) for i in range(3)]
+    col_widths = [max(col_widths[i], len(header)) for i, header in enumerate(["Repository Name", "Creation Date", "URL"])]
+
+    # Print the header
+    header = "{:<{w0}}\t{:<{w1}}\t{:<{w2}}".format("Repository Name", "Creation Date", "URL", w0=col_widths[0], w1=col_widths[1], w2=col_widths[2])
+    print(header)
+    print('-' * (sum(col_widths) + 2 * len(col_widths)))
+
+    # Print each row
+    for title, date, url in exhibit_c:
+        print("{:<{w0}}\t{:<{w1}}\t{:<{w2}}".format(title, date, url, w0=col_widths[0], w1=col_widths[1], w2=col_widths[2]))
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
